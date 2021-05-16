@@ -27,9 +27,9 @@ body {
 
 #nav {
   text-align: center;
-  padding: 30px;
+  padding: 30px 0;
   background-color:#fff;
-  border-botom:#e6e6e6;
+  border-bottom: 1px solid #efefef;
 
   a {
     padding: 20px;
@@ -47,6 +47,7 @@ div.widget {
   margin: 30px auto 0 auto;
   padding: 15px 30px;
   background-color: #fefefe;
+  border-radius: 2px;
 
   h1 {
     margin:0;

@@ -1,6 +1,6 @@
 <template>
   <div class="widget">
-    <h1>{{ working.length }} of {{ workers.length }} Workers Working</h1>
+    <h1>{{ workingCount }} of {{ workersCount }} Workers Working</h1>
     <p>The list below contains all workers which are currently running a job.</p>
     <table>
       <tr>
@@ -20,35 +20,21 @@
 </template>
 
 <script>
+import { mapState, mapGetters } from 'vuex';
 export default {
-  data () {
-    return {
-      loading: false,
-      workers: [],
-      error: null,
-      nextFetch: null
-    }
-  },
-  mounted () { this.fetchData() },
+  data() { return {} },
+  mounted() { this.$store.dispatch('startPeriodic', 'fetchWorkers') },
+  unmounted() { this.$store.dispatch('stopPeriodic', 'fetchWorkers') },
   methods: {
-    async fetchData () {
-      this.loading = true;
-      try {
-        this.workers = (await this.$http.get('/workers')).data;
-      }
-      catch(err) {
-        this.error = err;
-      }
-      this.loading = false;
-    },
     clearId(id) {
       return id.replace(/:[^:]*$/, '')
     }
   },
   computed: {
-    working() {
-      return this.workers.filter( worker => worker.working.state !== 'idle' )
-    }
+    ...mapGetters(['working']),
+    ...mapState(['workers']),
+    workersCount(){ return this.workers.length },
+    workingCount(){ return this.working.length }
   }
 }
 </script>

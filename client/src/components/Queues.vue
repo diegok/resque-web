@@ -22,36 +22,15 @@
 </template>
 
 <script>
+import { mapState, mapGetters } from 'vuex';
 export default {
-  data () {
-    return {
-      loading: false,
-      queues: [],
-      failed: 0,
-      error: null
-    }
-  },
-  mounted () { this.fetchData() },
-  methods: {
-    async fetchData () {
-      this.loading = true;
-      try {
-        const res = (await this.$http.get('/queues')).data
-        this.queues = res.items;
-        this.failed = res.failed;
-      }
-      catch(err) {
-        this.error = err;
-      }
-      this.loading = false;
-    }
-  },
+  data(){ return {} },
+  mounted() { this.$store.dispatch('startPeriodic', 'fetchQueues') },
+  unmounted() { this.$store.dispatch('stopPeriodic', 'fetchQueues') },
   computed: {
-    activeQueues() {
-      return this.queues.filter( queue => queue.jobs > 0 )
-    }
+    ...mapGetters(['activeQueues']),
+    ...mapState({ failed: 'failedTotal' })
   }
-
 }
 </script>
 
