@@ -16,7 +16,7 @@
           <td>{{ job.queue }}</td>
           <td>{{ job.payload.class }}</td>
           <td>
-            <pre v-highlightjs="sourcecode">
+            <pre v-highlightjs>
               <code class="json">{{ job.payload.args }}</code>
             </pre>
           </td>

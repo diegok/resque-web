@@ -1,8 +1,9 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Overview from '../views/Overview.vue'
-import Working from '../views/Working.vue'
-import Queues from '../views/Queues.vue'
-import Failed from '../views/Failed.vue'
+import Working  from '../views/Working.vue'
+import Queues   from '../views/Queues.vue'
+import Failed   from '../views/Failed.vue'
+import Stats    from '../views/Stats.vue'
 
 const routes = [
   {
@@ -42,7 +43,7 @@ const routes = [
   {
     path: '/stats',
     name: 'Stats',
-    component: Overview
+    component: Stats
   },
 ]
 
