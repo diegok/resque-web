@@ -17,24 +17,35 @@ sub startup ($self) {
 sub setup_routes($self) {
     my $r = $self->routes;
 
-    $r->get('/')->to('Front#init');
+    my $api = $r->under('/')->to( cb => sub($c){
+        return 1 unless $c->req_is_human;
+        $c->init_client;
+        0;
+    });
 
-    $r->get('/ping')->to('Stats#ping');
-    $r->get('/stats')->to('Stats#basic');
-    $r->get('/stats/resque')->to('Stats#full');
+    $api->get('/ping')->to('Stats#ping');
+    $api->get('/stats')->to('Stats#basic');
+    $api->get('/stats/resque')->to('Stats#full');
 
-    $r->get('/queues')->to('Queues#list');
-    $r->get('/queues/:name')->to('Queues#show');
-    $r->post('/queues/:name')->to('Queues#push_job');
-    $r->delete('/queues/:name')->to('Queues#remove');
+    $api->get('/queues')->to('Queues#list');
+    $api->get('/queues/:name')->to('Queues#show');
+    $api->post('/queues/:name')->to('Queues#push_job');
+    $api->delete('/queues/:name')->to('Queues#remove');
 
-    $r->get('/workers')->to('Workers#list');
+    $api->get('/workers')->to('Workers#list');
 
-    $r->get('/failed')->to('Failed#list');
-    $r->post('/failed')->to('Failed#mass_dequeue');
-    $r->delete('/failed')->to('Failed#empty');
-    $r->post('/failed/:idx')->to('Failed#requeue_one');
-    $r->delete('/failed/:idx')->to('Failed#remove_one');
+    $api->get('/failed')->to('Failed#list');
+    $api->post('/failed')->to('Failed#mass_dequeue');
+    $api->delete('/failed')->to('Failed#empty');
+    $api->post('/failed/:idx')->to('Failed#requeue_one');
+    $api->delete('/failed/:idx')->to('Failed#remove_one');
+
+    $r->get('/')->to(cb => sub($c){
+        $c->init_client;
+    });
+    $r->get('/*')->to(cb => sub($c){
+        $c->init_client;
+    });
 }
 
 sub setup_plugins($self) {
@@ -91,6 +102,18 @@ sub setup_helpers($self) {
                 working => _working($_, $work_at->{$_->id})
             }} @workers
         );
+    });
+
+    $self->helper( req_is_human => sub($c) {
+        return 0 if $c->req->is_xhr;
+        return 0 if $c->req->headers->user_agent =~ /curl/i;
+        return 0 if $c->req->headers->accept !~ /html/i;
+        1;
+    });
+
+    $self->helper( init_client => sub($c) {
+        state $client_app = $self->home->child('public', 'index.html');
+        $c->reply->file($client_app);
     });
 }
 
