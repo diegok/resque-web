@@ -1,7 +1,21 @@
 <template>
-  <div class="workers">
-    <h1>50 of 462 Workers Working</h1>
+  <div class="widget">
+    <h1>{{ working.length }} of {{ workers.length }} Workers Working</h1>
     <p>The list below contains all workers which are currently running a job.</p>
+    <table>
+      <tr>
+        <th>Where</th>
+        <th>Queue</th>
+        <th>Processing</th>
+      </tr>
+      <tbody>
+        <tr v-for="worker in working" :key="worker.id">
+          <td>{{ clearId(worker.id) }}</td>
+          <td>{{ worker.working.queue }}</td>
+          <td>{{ worker.working.payload.class }}</td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 </template>
 
@@ -11,34 +25,30 @@ export default {
     return {
       loading: false,
       workers: [],
-      error: null
+      error: null,
+      nextFetch: null
     }
   },
-  created () { this.fetchData() },
+  mounted () { this.fetchData() },
   methods: {
-    fetchData () {
+    async fetchData () {
       this.loading = true;
+      try {
+        this.workers = (await this.$http.get('/workers')).data;
+      }
+      catch(err) {
+        this.error = err;
+      }
+      this.loading = false;
+    },
+    clearId(id) {
+      return id.replace(/:[^:]*$/, '')
+    }
+  },
+  computed: {
+    working() {
+      return this.workers.filter( worker => worker.working.state !== 'idle' )
     }
   }
 }
 </script>
-
-<style scoped lang="scss">
-div.workers {
-  width:75%;
-  margin: auto;
-
-  h1 {
-    margin:0;
-  }
-
-  p {
-    font-size: 12px;
-    color: #bababa;
-  }
-
-  a {
-    color: #42b983;
-  }
-}
-</style>
