@@ -4,49 +4,24 @@ import Working  from '../views/Working.vue'
 import Queues   from '../views/Queues.vue'
 import Failed   from '../views/Failed.vue'
 import Stats    from '../views/Stats.vue'
+import Hosts    from '../views/Hosts.vue'
 
 const routes = [
-  {
-    path: '/',
-    name: 'Overview',
-    component: Overview
-  },
-  {
-    path: '/overview',
-    component: Overview
-    // route level code-splitting
-    // this generates a separate chunk (about.[hash].js) for this route
-    // which is lazy-loaded when the route is visited.
-    // component: () => import(/* webpackChunkName: "about" */ '../views/About.vue')
-  },
-  {
-    path: '/working',
-    name: 'Working',
-    component: Working
-  },
-  {
-    path: '/failed',
-    name: 'Failed',
-    component: Failed
-  },
-  {
-    path: '/queues',
-    name: 'Queues',
-    component: Queues
-  },
-  {
-    path: '/workers',
-    name: 'Workers',
-    component: Overview
-  },
-  {
-    path: '/stats',
-    name: 'Stats',
-    component: Stats
-  },
+  { path: '/', component: Overview },
+  { path: '/working', component: Working },
+  { path: '/failed', component: Failed },
+  { path: '/queues', component: Queues },
+  { path: '/workers', component: Hosts },
+  { path: '/stats', component: Stats },
+  { path: '/hosts/:hostname', component: Working },
+  { path: '/workers/:id', component: Working },
+  { path: '/queues/:name', component: Working },
 ]
 
 const router = createRouter({
+  scrollBehavior(to, from, savedPosition) {
+    return savedPosition || { top: 0 };
+  },
   history: createWebHistory(process.env.BASE_URL),
   routes
 })

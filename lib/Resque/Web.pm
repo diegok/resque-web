@@ -86,22 +86,40 @@ sub setup_helpers($self) {
         $attr;
     });
 
+    $self->helper( cached => sub($c, $key, $cb, $secs = 1){
+        state $cache = {};
+        my $now = time;
+
+        $cache->{$key} = {
+            t   => $now,
+            res => $cb->($c)
+        } unless ($cache->{$key}{t}||0) >= $now - $secs;
+
+        $cache->{$key}{res};
+    });
+
     $self->helper( queues => sub($c){
-        my $queues = $c->resque->queues;
-        my $sizes  = $c->resque->size_map($queues);
-        c( map {{ name => $_, jobs => $sizes->{$_} }} $queues->@* );
+        $c->cached( queues => sub($c){
+            $c->app->log->debug('queues');
+            my $queues = $c->resque->queues;
+            my $sizes  = $c->resque->size_map($queues);
+            c( map {{ name => $_, jobs => $sizes->{$_} }} $queues->@* );
+        });
     });
 
     $self->helper( workers => sub($c){
-        my @workers = $c->resque->worker->all->@*;
-        my $work_at = $c->resque->worker->processing_map(@workers);
-        c( map{{
-                id      => $_->id,
-                queues  => $_->queues,
-                paused  => $_->paused,
-                working => _working($_, $work_at->{$_->id})
-            }} @workers
-        );
+        $c->app->log->debug('workers');
+        $c->cached( workers => sub($c){
+            my @workers = $c->resque->worker->all->@*;
+            my $work_at = $c->resque->worker->processing_map(@workers);
+            c( map{{
+                    id      => $_->id,
+                    queues  => $_->queues,
+                    paused  => $_->paused,
+                    working => _working($_, $work_at->{$_->id})
+                }} @workers
+            );
+        });
     });
 
     $self->helper( req_is_human => sub($c) {

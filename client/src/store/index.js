@@ -101,10 +101,35 @@ const actions = {
 
 const getters = {
   activeQueues(state) {
-    return state.queues.filter( queue => queue.jobs > 0 )
+    return state.queues.filter( queue => queue.jobs > 0 ).sort( (a, b) => a.name > b.name )
   },
   working(state) {
-    return state.workers.filter( worker => worker.working.state !== 'idle' )
+    return state.workers.filter(
+      worker => worker.working.state !== 'idle'
+    ).map(
+      worker => {
+        worker.working.run_at = worker.working.run_at + 'Z';
+        worker.working.since = new Date(worker.working.run_at);
+        return worker;
+      }
+    ).sort( (a, b) => a.working.since > b.working.since );
+  },
+  hosts(state) {
+    const hosts = {};
+
+    state.workers.forEach( worker => {
+      const host = worker.id.replace(/:.*$/, '');
+      if ( !hosts[host] ) hosts[host] = { name: host, workers: 0, working: 0, waiting: {} };
+
+      hosts[host].workers++;
+
+      if ( worker.working.state !== 'idle' ) { hosts[host].working++ }
+      else {
+        worker.queues.forEach( queue => hosts[host].waiting[queue] = (hosts[host].waiting[queue]||0) + 1 )
+      }
+    });
+
+    return Object.values(hosts).sort( (a, b) => a.name > b.name );
   }
 };
 

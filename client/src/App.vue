@@ -25,6 +25,15 @@ body {
   padding: 0 0 30px 0;
 }
 
+a {
+  text-decoration: none;
+  color: #2c3e50;
+  &:hover {
+    color: #42b983;
+    text-decoration: underline;
+  }
+}
+
 #nav {
   text-align: center;
   padding: 30px 0;
@@ -34,7 +43,6 @@ body {
   a {
     padding: 20px;
     font-weight: bold;
-    color: #2c3e50;
 
     &.router-link-exact-active {
       color: #42b983;
@@ -58,10 +66,6 @@ div.widget {
     color: #bababa;
   }
 
-  a {
-    color: #42b983;
-  }
-
   table {
     border-collapse: collapse;
     border-spacing: 0;
@@ -78,6 +82,10 @@ div.widget {
       font-size: 15px;
       font-weight: bold;
       text-align: left;
+    }
+
+    tr:hover {
+      background-color: #fafafa;
     }
   }
 }

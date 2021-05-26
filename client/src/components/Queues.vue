@@ -9,11 +9,19 @@
       </tr>
       <tbody>
         <tr v-for="queue in activeQueues" :key="queue.name">
-          <td class="queue">{{ queue.name }}</td>
+          <td class="queue">
+            <router-link :to="`/queues/${ queue.name }`">
+              {{ queue.name }}
+            </router-link>
+          </td>
           <td>{{ queue.jobs }}</td>
         </tr>
         <tr class="failed">
-          <td>Failed</td>
+          <td>
+            <router-link to="/failed">
+              Failed
+            </router-link>
+          </td>
           <td>{{ failed }}</td>
         </tr>
       </tbody>
@@ -34,7 +42,7 @@ export default {
 }
 </script>
 
-<style lang="scss">
+<style scoped lang="scss">
   table {
     td.queue {
       font-weight: bold;
@@ -43,6 +51,8 @@ export default {
     tr.failed {
       background-color: #ffecec;
       color: #d37474;
+      &:hover { background-color: #ffecec; }
+      a { color: #d37474; }
     }
   }
 </style>

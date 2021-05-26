@@ -4,15 +4,31 @@
     <p>The list below contains all workers which are currently running a job.</p>
     <table>
       <tr>
-        <th>Where</th>
+        <th>Host</th>
+        <th>PID</th>
         <th>Queue</th>
+        <th>Since</th>
         <th>Processing</th>
       </tr>
       <tbody>
         <tr v-for="worker in working" :key="worker.id">
-          <td>{{ clearId(worker.id) }}</td>
+          <td>
+            <router-link :to="`/hosts/${ host(worker.id) }`">
+              {{ host(worker.id) }}
+            </router-link>
+          </td>
+          <td>
+            <router-link :to="`/workers/${ worker.id }`">
+              {{ pid(worker.id) }}
+            </router-link>
+          </td>
           <td>{{ worker.working.queue }}</td>
-          <td>{{ worker.working.payload.class }}</td>
+          <td>
+            <time-ago :date="worker.working.run_at" />
+          </td>
+          <td>
+            {{ worker.working.payload.class }}
+          </td>
         </tr>
       </tbody>
     </table>
@@ -21,13 +37,19 @@
 
 <script>
 import { mapState, mapGetters } from 'vuex';
+import TimeAgo from './TimeAgo';
+
 export default {
   data() { return {} },
+  components: { 'time-ago': TimeAgo },
   mounted() { this.$store.dispatch('startPeriodic', 'fetchWorkers') },
   unmounted() { this.$store.dispatch('stopPeriodic', 'fetchWorkers') },
   methods: {
-    clearId(id) {
-      return id.replace(/:[^:]*$/, '')
+    host(id) {
+      return id.replace(/:.*$/, '')
+    },
+    pid(id) {
+      return id.replace(/:[^:]*$/, '').replace(/^.*?:/,'')
     }
   },
   computed: {
