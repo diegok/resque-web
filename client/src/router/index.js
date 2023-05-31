@@ -1,10 +1,11 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import Overview from '../views/Overview.vue'
-import Working  from '../views/Working.vue'
-import Queues   from '../views/Queues.vue'
-import Failed   from '../views/Failed.vue'
-import Stats    from '../views/Stats.vue'
-import Hosts    from '../views/Hosts.vue'
+import Overview  from '../views/Overview.vue'
+import Working   from '../views/Working.vue'
+import Queues    from '../views/Queues.vue'
+import QueueJobs from '../views/Queues/Jobs.vue'
+import Failed    from '../views/Failed.vue'
+import Stats     from '../views/Stats.vue'
+import Hosts     from '../views/Hosts.vue'
 
 const routes = [
   { path: '/', component: Overview },
@@ -15,7 +16,7 @@ const routes = [
   { path: '/stats', component: Stats },
   { path: '/hosts/:hostname', component: Working },
   { path: '/workers/:id', component: Working },
-  { path: '/queues/:name', component: Working },
+  { path: '/queues/:name', component: QueueJobs },
 ]
 
 const router = createRouter({
