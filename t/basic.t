@@ -38,7 +38,7 @@ $t->get_ok('/queues')
 
 $t->get_ok('/workers')
     ->status_is(200)
-    ->content_type_like(qr/json/) ;
+    ->content_type_like(qr/json/);
 
 $t->get_ok('/failed')
     ->status_is(200)
@@ -51,6 +51,7 @@ $t->post_ok('/queues/test', json => { class => 'Test', args => [] }, "Push a job
 
 $t->get_ok('/stats/resque')
     ->status_is(200)
+    ->content_type_like(qr/json/)
     ->json_is('/pending', 1, 'stats shows one pending job');
 
 done_testing();

@@ -86,6 +86,47 @@ sub setup_helpers($self) {
         $attr;
     });
 
+    $self->helper( queues_p => sub($c){
+        $c->single_subtask( queues => sub($c) {
+            my $queues = $c->resque->queues;
+            my $sizes  = $c->resque->size_map($queues);
+            return map {{ name => $_, jobs => $sizes->{$_} }} $queues->@*;
+        })->then(sub($queues) {
+            c(@$queues)
+        });
+    });
+
+    $self->helper( workers_p => sub($c){
+        $c->single_subtask( workers => sub($c) {
+            my @workers = $c->resque->worker->all->@*;
+            my $work_at = $c->resque->worker->processing_map(@workers);
+            return map{{
+                id      => $_->id,
+                queues  => $_->queues,
+                paused  => $_->paused,
+                working => _working($_, $work_at->{$_->id})
+            }} @workers;
+        })->then(sub($workers) {
+            c(@$workers)
+        });
+    });
+
+    # a helper to ensure only one sub-proces runs at a time for a given callback
+    # that should return a serializable structure...
+    $self->helper( single_subtask => sub($c, $key, $cb){
+        state $cache = {};
+        return $cache->{$key}{p} if $cache->{$key}{p};
+        $cache->{$key}{last} ||= [];
+        $cache->{$key}{p} = Mojo::IOLoop->subprocess->run_p(sub {
+            $cache->{$key}{last} = [ $cb->($c) ];
+        })->catch(sub ($err) {
+            $c->app->log->error("Error running $key sub-task: $err");
+            $cache->{$key}{last}
+        })->finally(sub{
+            $cache->{$key}{p} = undef;
+        });
+    });
+
     $self->helper( cached => sub($c, $key, $cb, $secs = 1){
         state $cache = {};
         my $now = time;
@@ -98,34 +139,10 @@ sub setup_helpers($self) {
         $cache->{$key}{res};
     });
 
-    $self->helper( queues => sub($c){
-        $c->cached( queues => sub($c){
-            $c->app->log->debug('queues');
-            my $queues = $c->resque->queues;
-            my $sizes  = $c->resque->size_map($queues);
-            c( map {{ name => $_, jobs => $sizes->{$_} }} $queues->@* );
-        });
-    });
-
-    $self->helper( workers => sub($c){
-        $c->app->log->debug('workers');
-        $c->cached( workers => sub($c){
-            my @workers = $c->resque->worker->all->@*;
-            my $work_at = $c->resque->worker->processing_map(@workers);
-            c( map{{
-                    id      => $_->id,
-                    queues  => $_->queues,
-                    paused  => $_->paused,
-                    working => _working($_, $work_at->{$_->id})
-                }} @workers
-            );
-        });
-    });
-
     $self->helper( req_is_human => sub($c) {
         return 0 if $c->req->is_xhr;
         return 0 if $c->req->headers->user_agent =~ /curl/i;
-        return 0 if $c->req->headers->accept !~ /html/i;
+        return 0 if ($c->req->headers->accept||'') !~ /html/i;
         1;
     });
 

@@ -7,23 +7,34 @@ sub ping($c) {
 };
 
 sub basic($c) {
-    $c->render( json => {
-        processed => $c->resque->worker->stat->get('processed'),
-        redis     => $c->resque->redis->info,
+    Mojo::IOLoop->subprocess->run_p(sub {
+        return {
+            processed => $c->resque->worker->stat->get('processed'),
+            redis     => $c->resque->redis->info,
+        }
+    })->then(sub($res){
+        $c->render( json => $res );
     });
 };
 
 sub full($c) {
-    my $queues  = $c->queues();
-    my $workers = $c->workers();
-    $c->render( json => {
-        processed => $c->resque->worker->stat->get('processed'),
-        failed    => $c->resque->failures->count,
-        pending   => $queues->map(sub{$_->{'jobs'}})->reduce(sub{ $a + $b }),
-        queues    => $queues->size,
-        redis     => $c->resque->redis->info,
-        workers   => $workers->size,
-        working   => $workers->grep(sub{ $_->{working}{state} eq 'working' })->size
+    Mojo::Promise->all(
+        $c->queues_p,
+        $c->workers_p,
+        Mojo::IOLoop->subprocess->run_p(sub {
+            return {
+                processed => $c->resque->worker->stat->get('processed'),
+                failed    => $c->resque->failures->count,
+                redis     => $c->resque->redis->info,
+            }
+        })
+    )->then(sub($queues, $workers, $info){
+        $c->render( json => { $info->[0]->%*,
+            pending => $queues->[0]->map(sub{$_->{'jobs'}})->reduce(sub{ $a + $b }),
+            queues  => $queues->[0]->size,
+            workers => $workers->[0]->size,
+            working => $workers->[0]->grep(sub{ $_->{working}{state} eq 'working' })->size
+        });
     });
 };
 
