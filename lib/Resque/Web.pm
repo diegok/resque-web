@@ -117,12 +117,30 @@ sub setup_helpers($self) {
         state $cache = {};
         return $cache->{$key}{p} if $cache->{$key}{p};
         $cache->{$key}{last} ||= [];
-        $cache->{$key}{p} = Mojo::IOLoop->subprocess->run_p(sub {
+
+        my $subprocess = Mojo::IOLoop->subprocess;
+        my $promise    = $subprocess->run_p(sub {
             $cache->{$key}{last} = [ $cb->($c) ];
-        })->catch(sub ($err) {
+        });
+
+        # Watchdog: a wedged child (tight CPU loop, immune to SIGTERM because it
+        # inherits the daemon's signal handlers) would pin this key forever and
+        # stall every /$key request piggybacking on it. SIGKILL can't be caught;
+        # the parent then reads EOF from the result pipe, the promise rejects
+        # and finally() releases the key, so the next request starts fresh.
+        my $timeout  = $ENV{RESQUE_WEB_SUBTASK_TIMEOUT} || 20;
+        my $watchdog = Mojo::IOLoop->timer( $timeout => sub {
+            my $pid = $subprocess->pid;
+            return unless $pid && kill 0 => $pid;
+            $c->app->log->warn("Killing wedged $key sub-task (pid $pid) after ${timeout}s");
+            kill 'KILL', $pid;
+        });
+
+        $cache->{$key}{p} = $promise->catch(sub ($err) {
             $c->app->log->error("Error running $key sub-task: $err");
             $cache->{$key}{last}
         })->finally(sub{
+            Mojo::IOLoop->remove($watchdog);
             $cache->{$key}{p} = undef;
         });
     });
